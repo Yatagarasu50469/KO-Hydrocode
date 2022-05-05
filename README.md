@@ -2,7 +2,7 @@
 
 	**Program Name:**	KO_FiniteDifference
 	**Author:**		David Helminiak
-	**Version:**		0.1.0
+	**Version:**		0.2.0
 	**License:**		GNU General Public License v3.0
 	**Versioning:**		
 				0.1.0   Single-threaded re-implementation of finite difference method
@@ -16,6 +16,9 @@ This hydrocode was ultimately derived from Wilkin's 'Computer Simulation of Dyna
     mpicc DH_KO_FiniteDifference\ -\ singleThreadBackup.c -o KO_FiniteDifference -lm
 
 # RUNTIME
-
+Change number of threads to parallelize operations across with:
+	export OMP_NUM_THREADS=8
+	
+Then run with:
     ./KO_FiniteDifference
 

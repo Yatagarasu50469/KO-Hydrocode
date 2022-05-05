@@ -1,20 +1,22 @@
 //=================================================================================================================
 //Program Name:		KO_FiniteDifference
 //Author:			David Helminiak
-//Version:			0.1.0
+//Version:			0.2.0
 //Date Created:		3 April 2022
-//Date Modified: 	3 May 2022
+//Date Modified: 	5 May 2022
 //
 //License:			GNU General Public License v3.0
 //Purpose:			Simulation of materials for one space dimension and time
-//Compilation:		mpicc KO_FiniteDifference.c -o KO_FiniteDifference -lm
+//Compilation:		mpicc KO_FiniteDifference.c -o KO_FiniteDifference -lm -fopenmp
 //Runtime:			./KO_FiniteDifference
+//					Change number of threads with export OMP_NUM_THREADS=8
 //Notes:			This hydrocode was ultimately derived from Wilkin's 'Computer Simulation of Dynamic Phenomena.' 
 //					More specifically, it is a re-implementation of an existing single-threaded version produced
 //                  in MATLAB by Nathaniel S. Helminiak, itself built on a FORTRAN implementation made available
 //					by John P. Borg of the Marquette Unviersity Shock Physics Laboratory. 
 //
 //Versioning:		0.1.0   Single-threaded re-implementation of finite difference method
+//					0.2.0	Integration of CPU multiprocessing acceleration through OpenMP
 //
 //=================================================================================================================
 
@@ -23,6 +25,7 @@
 //=================================================================================================================
 
 #include <math.h>
+#include <omp.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -77,7 +80,6 @@ int main(int argc, char **argv) {
 
 	//Adaptive mesh refinement
 	double adaptiveMeshRefinement = 0.0;
-	
 	
 	//Definition of simulation materials [Number of materials][Number of material properties] in the simulation
 		//	0, 		1, 			2, 			3, 			4, 				5, 			6, 			7, 			8, 			9, 			10, 	11, 	12, 		13, 			14, 		15, 		16, 		17, 			18, 	19, 	20, 	21    
@@ -154,6 +156,7 @@ int main(int argc, char **argv) {
 	
 	//Number of allowed material nodes; at least double the number of starting nodes for fracture 
 	int totalNodes = 0;
+	#pragma omp parallel for reduction(+:totalNodes)
 	for (int i=0; i<numMat; i++) {
 		totalNodes += matProp[i][1];
 	}
@@ -236,14 +239,21 @@ int main(int argc, char **argv) {
 	//Holding variable for velocity
 	double uSave;
 	
-	//Other unlabeled variables that are called or referenced...
+	//Holding variables for temporary resolution of inside/outside boundary conditions
+	double sigmar_in, sigmao_in, sigmar_out, sigmao_out;
+	
+	//Contact times for resolution of node-to-node contact
 	double contactTime, initialContactTime;
+	
+	//Inside and outside boundary conditon variables for resolution of node-to-node contact
+	double phiv, phij, betav, betaj;
+	
+	//Other unlabeled variables that are called or referenced...
 	double deltaZ, Vdot, dt_min, delt_temp;
 	double qbar;
 	double b;
 	double aa, bb, xb;
 	double xx, xa;
-	double phiv, phij, betav, betaj, dthalf;
 	double qtotal, mvtotal, ketotal, ietotal, etotal, ke3total;
 	double bs1, bs2, bs3, bs4, bs5, bs6, bs7, bs8, bs9, bs10;
 	double rho_local, stemp, ctemp, gtemp, v0, v00, vv;
@@ -270,6 +280,7 @@ int main(int argc, char **argv) {
 	int contactNode;
 	
 	//Specify initial values, confirming an even number of material nodes
+	#pragma omp parallel for
 	for (int j=0; j<totalNodes; j++) {
 		m[j] = 0;
 		rho[j] = 0;
@@ -302,11 +313,13 @@ int main(int argc, char **argv) {
 		}
 	}
 	
+	#pragma omp parallel for
 	for (int n=0; n<4; n++) {
 		t[n] = deltat * (double) n;
 	}
 	
 	//Check for an even number of material nodes
+	#pragma omp parallel for
 	for (int imat=1; imat<numMat; imat++) {
 		ieos[0][totalNodes-(imat-1)] = imat;
 		ieos[1][totalNodes-(imat-1)] = matProp[imat][0];
@@ -330,7 +343,6 @@ int main(int argc, char **argv) {
 	//Discretize nodes
 	for (int imat=1; imat<numMat; imat++) {
 		
-		deltar = matProp[imat][2]/(matProp[imat][1]/2);
 		if (imat == 1) {
 			iPoint = 0;
 		}
@@ -367,34 +379,31 @@ int main(int argc, char **argv) {
 		r[1][iPoint] = matProp[imat][3];
 		U[0][iPoint] = matProp[imat][5];
 		U[1][iPoint] = matProp[imat][5];
+		deltar = matProp[imat][2]/(matProp[imat][1]/2);
 		
 		//Define each remaining node pair
+		#pragma omp parallel for private(counter)
 		for (int j=iPoint+2; j<=iPoint+(int)matProp[imat][1]; j+=2) {
+			counter = (j/2)-(iPoint/2);
 			ibc[j] = 0;
-			r[0][j] = r[0][j-2] + deltar;
-			r[1][j] = r[1][j-2] + deltar;
-			//r[1][j] = matProp[imat][3]+(count*deltar);
-			//printf("r[0][j]: %2.15f; r[1][j]: %2.15f; count*deltar: %2.15f\n", r[0][j], r[1][j], count*deltar);
+			ibc[j-1] = 0;
+			r[0][j] = matProp[imat][3]+(counter*deltar);
+			r[1][j] = matProp[imat][3]+(counter*deltar);
+			r[0][j-1] = 0.5*(r[0][j]+matProp[imat][3]+((counter-1)*deltar));
+			r[1][j-1] = 0.5*(r[1][j]+matProp[imat][3]+((counter-1)*deltar));
 			U[0][j] = matProp[imat][5];
 			U[1][j] = matProp[imat][5];
-		}
-		
-		//return 0;
-		for (int j=iPoint+1; j<=iPoint+(int)matProp[imat][1]; j+=2) {
-			ibc[j] = 0;
-			r[0][j] = 0.5*(r[0][j+1]+r[0][j-1]);
-			r[1][j] = 0.5*(r[1][j+1]+r[1][j-1]);
-			P[0][j] = matProp[imat][4];
-			P[1][j] = matProp[imat][4];
-			rho[j] = matProp[imat][6];  //rho is always rho0; DH, so why not replace rho entirely with a matProp call...
-			E[0][j] = matProp[imat][7];
-			E[1][j] = matProp[imat][7];
-			ieos[0][j] = ieos[0][totalNodes-(imat-1)];
-			ieos[1][j] = ieos[1][totalNodes-(imat-1)];
-			Y[j] = matProp[imat][13];			
-			pfrac[j-1] = matProp[imat][15];
+			P[0][j-1] = matProp[imat][4];
+			P[1][j-1] = matProp[imat][4];
+			E[0][j-1] = matProp[imat][7];
+			E[1][j-1] = matProp[imat][7];
+			ieos[0][j-1] = ieos[0][totalNodes-(imat-1)];
+			ieos[1][j-1] = ieos[1][totalNodes-(imat-1)];
+			rho[j-1] = matProp[imat][6];  //rho is always rho0; DH, so why not replace rho entirely with a matProp call...
+			Y[j-1] = matProp[imat][13];			
+			pfrac[j-2] = matProp[imat][15];
+			pfrac[-1] = matProp[imat][15];
 			pfrac[j] = matProp[imat][15];
-			pfrac[j+1] = matProp[imat][15];
 		}
 		
 		//Assign values to the last cell center
@@ -409,6 +418,7 @@ int main(int argc, char **argv) {
 	ibc[totalNodes]=9;
 
 	//Assign mass, volume, energy, temperature, and entropy to non-fracture nodes
+	#pragma omp parallel for
 	for (int j=0; j<=totalNodes-2; j+=2) {
 		if (ibc[j+1] == 0) {
 			m[j+1] = rho[j+1]*((pow(r[0][j+2],geometry)-pow(r[0][j],geometry))/geometry);
@@ -421,6 +431,8 @@ int main(int argc, char **argv) {
 			entropy[0][j+1] = 6.8*1e-5;
 			entropy[1][j+1] = 6.8*1e-5;
 			
+			//#pragma omp critical
+			//{
 			//printf("Node: %d\n", j);
 			//printf("Pressure (Mbar): %2.0f\n", P[0][j+1]);
 			//printf("Energy (MBar-cc/cc): %2.0f\n", E[0][j+1]);
@@ -430,6 +442,7 @@ int main(int argc, char **argv) {
 			//printf("Mass (g): %2.0f\n", m[j+1]);
 			//printf("Entropy: %2.0f\n", entropy[0][j+1]);
 			//printf("\n");
+			//}
 		}
 	}
 	
@@ -445,7 +458,9 @@ int main(int argc, char **argv) {
 		
 		//Contact Checks and Time Advancement
 		//=================================================================================================================
+		
 		//Adjust future node positions according to velocities
+		#pragma omp parallel for
 		for (int j=0; j<=totalNodes; j+=2) {
 			if (ibc[j] != 9) {
 				r[3][j] = r[1][j]+U[0][j]*deltat;
@@ -454,28 +469,26 @@ int main(int argc, char **argv) {
 		}
 		
 		//Perform a contact check for non-void nodes
+		#pragma omp parallel for private(sigmar_in, sigmao_in, sigmar_out, sigmao_out, phiv, betav, phij, betaj, aa, bb, counter, contactTime, initialContactTime)
 		for (int j=2; j<=totalNodes; j+=2) {
 			
 			//If the current mode is not void, its next position intersects with the previous node, and the fracture node is void
 			if ((ibc[j] != 9) && (r[3][j] <= r[3][j-2]) && (ibc[j-1] == 9)) {
 				
-				//Indicate occurrence of future contact 
-				contactFlag = true;
-				
 				//Resolve inside boundary condition
-				sigmar[1][j-3] = -(P[1][j-3]+q[0][j-3])+s1[1][j-3];
-				sigmao[1][j-3] = -(P[1][j-3]+q[0][j-3])+s2[1][j-3];
+				sigmar_in = -(P[1][j-3]+q[0][j-3])+s1[1][j-3];
+				sigmao_in = -(P[1][j-3]+q[0][j-3])+s2[1][j-3];
 				phiv = (rho[j-3]*((r[1][j-2]-r[1][j-4])/V[1][j-3]))/2.0;
-				betav = (sigmar[1][j-3]-sigmao[1][j-3])*V[1][j-1]/(r[1][j-3]*rho[j-3]);
+				betav = (sigmar_in-sigmao_in)*V[1][j-1]/(r[1][j-3]*rho[j-3]);
 				
 				//Resolve outside boundary condition
-				sigmar[1][j+1] = (-(P[1][j+1]+q[0][j+1])+s1[1][j+1]);
-				sigmao[1][j+1] = (-(P[1][j+1]+q[0][j+1])+s2[1][j+1]);
+				sigmar_out = (-(P[1][j+1]+q[0][j+1])+s1[1][j+1]);
+				sigmao_out = (-(P[1][j+1]+q[0][j+1])+s2[1][j+1]);
 				phij = (rho[j+1]*((r[1][j+2]-r[1][j])/V[1][j+1]))/2.0;
-				betaj = (sigmar[1][j+1]-sigmao[1][j+1])*V[1][j+1]/(r[1][j+1]*rho[j+1]);
+				betaj = (sigmar_out-sigmao_out)*V[1][j+1]/(r[1][j+1]*rho[j+1]);
 				
 				//Compute time until nodes contact
-				aa = sigmar[1][j+1]/phij+sigmar[1][j-3]/phiv+(betav+betaj)*(geometry-1.0);
+				aa = sigmar_out/phij+sigmar_in/phiv+(betav+betaj)*(geometry-1.0);
 				bb = (2.0*(U[0][j]-U[0][j-2])+aa*(t[1]-t[0]));
 				contactTime = -(2.0*(r[1][j]-r[1][j-2]))/(bb);
 				
@@ -488,19 +501,32 @@ int main(int argc, char **argv) {
 					contactTime = contactTime-(aa*contactTime*contactTime+bb*contactTime+2.0*(r[1][j]-r[1][j-2]))/(2.0*aa*contactTime+bb);
 				}
 				
-				//If the minimum contact time has not yet been set, or the determined time for this node contact is less than the prior, then update such
-				if ((minContactTime == -1) || (contactTime < minContactTime)) {
+				#pragma omp critical
+				{
+					//Indicate occurrence of future contact 
+					contactFlag = true;
+					
+					//If the minimum contact time has not yet been set, or the determined time for this node contact is less than the prior, then update such
+					if ((minContactTime == -1) || (contactTime < minContactTime)) {
 						minContactTime = contactTime;
 						contactNode = j;
+						
+						//DH, not sure if setting sigmar and sigmao is actually needed here, or if the computation is repeated/overwrites this later on
+						//If repeated, then can replace the sigmar/o-in/out holding variables, otherwise the access needs to be protected
+						sigmar[1][j-3] = sigmar_in;
+						sigmao[1][j-3] = sigmao_in;
+						sigmar[1][j+1] = sigmar_out;
+						sigmao[1][j+1] = sigmao_out;
+					}
 				}
 			}
 		}
 		
-		//If contact, set timestep/boundary condtion to the minimum contact time/node; either way compute new timesteps
+		//If contact, set timestep/boundary condtion to the minimum contact time/node and resolve in/out boundary condition; either way compute new timesteps
 		if (contactFlag) {
 			deltat = minContactTime/2.0;
 			ibc[contactNode] = -3;
-			t[2] = t[1] + contactTime/2.0;
+			t[2] = t[1] + minContactTime/2.0;
 			t[3] = t[2] + deltat;
 		}
 		else {
@@ -518,14 +544,16 @@ int main(int argc, char **argv) {
 		//=================================================================================================================
 		
 		//Update sigmar/sigmao for nodes with void boundary conditions
+		#pragma omp parallel for
 		for (int j=0; j<=totalNodes; j+=2) {
 			if ((j < totalNodes) && (ibc[j+1] == 0)) {
 				sigmar[1][j+1] = -(P[1][j+1]+q[0][j+1])+s1[1][j+1];
 				sigmao[1][j+1] = -(P[1][j+1]+q[0][j+1])+s2[1][j+1];
 			}
 		}
-		
+
 		//For nodes that are not voids, adjust velocities depending on the initial boundary conditions
+		#pragma omp parallel for
 		for (int j=0; j<=totalNodes; j+=2) {
 			if (ibc[j] != 9) {
 				if (ibc[j] == -1) {
@@ -606,7 +634,7 @@ int main(int argc, char **argv) {
 				}
 				else {
 					printf("Error - Momentum check failed at node: %d with initial boundary condition: %d\n", j, ibc[j]);
-					return -1;
+					//return -1;
 				}
 			}
 		}
@@ -617,6 +645,7 @@ int main(int argc, char **argv) {
 			//Compute condition for potential timestep adjustment
 			counter = 0;
 			total = 0.0;
+			#pragma omp parallel for reduction(+:total) reduction(+:counter)
 			for (int j=0; j<totalNodes; j++) {
 				total += U[2][j]-U2[j];
 				if (U[2][j] > 0) {
@@ -631,6 +660,7 @@ int main(int argc, char **argv) {
 			}
 			else {
 				deltat = deltat/4;
+				#pragma omp parallel for
 				for (int j=0; j<=totalNodes; j+=2) {
 					if (ibc[j] != 9) {
 						if ((ibc[j] == -1) || (ibc[j] == 1) || (ibc[j] == -2 || ibc[j] == -3) || (ibc[j] == 2) || (ibc[j] == 0)) {
@@ -639,7 +669,7 @@ int main(int argc, char **argv) {
 					}
 				}
 			}
-
+			
 			//Adjust the functional timestep according to the modification made to the true timestep
 			t[2] = t[1] + deltat/2.0;
 			t[3] = t[1] + deltat;
@@ -647,6 +677,7 @@ int main(int argc, char **argv) {
 			
 			//If not using the values just computed, then recompute the non-void node velocities based on the adjusted timestep depending on the initial boundary conditions
 			if (timestepAdjustFlag) {
+				#pragma omp parallel for
 				for (int j=0; j<=totalNodes; j+=2) {
 					if (ibc[j] != 9) {
 						if (ibc[j] == -1) {
@@ -684,7 +715,7 @@ int main(int argc, char **argv) {
 						}
 						else {
 							printf("Error - Momentum check failed at node: %d with initial boundary condition: %d\n", j, ibc[j]);
-							return -1;
+							//return -1;
 						}
 					}
 				}
@@ -695,6 +726,7 @@ int main(int argc, char **argv) {
 		//=================================================================================================================
 		
 		//Move positions of non-void nodes according to velocities/timestep
+		#pragma omp parallel for
 		for (int j=0; j<totalNodes; j+=2) {
 			if (ibc[j] != 9) {
 				r[3][j] = r[1][j]+U[2][j]*deltat;
@@ -770,6 +802,8 @@ int main(int argc, char **argv) {
 			}
 		}
 		
+		//Relative volume, velocity strains, stresses, yield condition, artificial viscosity, energy, pressure, temperature, entropy, and pressure/entropy convergence
+		#pragma omp parallel for private(adaptiveMeshRefinement, gamma0, k1, k2, k3, qbar, deltaZ, strain, xa, xb, xx, vv, v0, v00, stemp, ctemp, gtemp, P0, E0, T0, rho_local, up, Us, PH, EH, TH, En2j1, diffE)
 		for (int j=0; j<=totalNodes-2; j+=2) {
 			if (ibc[j+1] == 0) {
 				
@@ -781,7 +815,7 @@ int main(int argc, char **argv) {
 				V[2][j+1] = rho[j+1]*((pow(r[2][j+2],geometry)-pow(r[2][j],geometry))/geometry)/m[j+1];
 				if ((V[3][j+1] == 0) || (V[2][j+1] == 0)) {
 					printf("Error - Zero volume: %d %2.0f %2.0f %2.0f\n", j+1, r[3][j+2], r[3][j], V[3][j+1]);
-					return -1;
+					//return -1;
 				}
 				
 				//Veclocity Strains; 1st order accurate			
@@ -793,7 +827,7 @@ int main(int argc, char **argv) {
 				else {
 					epsilon2[2][j+1] = (U[2][j+2]+U[2][j])/(r[2][j+2]+r[2][j]);
 				}
-				
+			
 				//Stresses
 				//=================================================================================================================
 				if (ieos[1][j+1] != 3) {
@@ -808,7 +842,7 @@ int main(int argc, char **argv) {
 					s1[3][j+1] = 4.0*1.8e-10*epsilon1[2][j+1]/3.0-1.387e-6*(V[3][j+1]-V[1][j+1])/V[2][j+1];
 					s1[2][j+1] = (s1[3][j+1]+s1[1][j+1])/2.0;
 				}
-				
+			
 				//Von Mises Yield Condition (Calculate the deviatoric strain at 2 and compare it to the yield strength)
 				//=================================================================================================================
 				if (ieos[1][j+1] != 3) {
@@ -923,7 +957,7 @@ int main(int argc, char **argv) {
 					else {
 						printf("Error - Compaction issue in energy computation\n");
 						printf("%d %2.0f\n",icompact[3][j+1], xx);
-						return -1;
+						//return -1;
 					}
 					E[3][j+1] = (E[1][j+1]-((xa+P[1][j+1])/2.0+qbar)*(V[3][j+1]-V[1][j+1])+deltaZ)/(1.0+xb*(V[3][j+1]-V[1][j+1])/2.0);
 					E[2][j+1] = (E[3][j+1]+E[1][j+1])/2.0;
@@ -940,7 +974,7 @@ int main(int argc, char **argv) {
 					if (vv <= v0) {
 						icompact[3][j+1] = 1;
 					}
-					 //icompact is the flag, once compact always compact 
+					//icompact is the flag, once compact always compact 
 					if (icompact[3][j+1] == 1) { 
 						
 						//porous hugoniot, see meyers pg 141
@@ -969,7 +1003,7 @@ int main(int argc, char **argv) {
 				else {
 					printf("Error - EOS computation\n");
 					printf("%d %d\n", j, ieos[1][j+1]);
-					return -1;
+					//return -1;
 				}
 				
 				//Pressure
@@ -1012,7 +1046,7 @@ int main(int argc, char **argv) {
 					if (v0 == 0) {
 						printf("Error - v0 can not equal zero");
 						printf("%d %2.0f\n", ieos[0][j+1], matProp[ieos[0][j+1]][20]);
-						return -1;
+						//return -1;
 					}
 					if (vv <= v0) {
 						icompact[2][j+1] = 1;
@@ -1032,7 +1066,7 @@ int main(int argc, char **argv) {
 					}
 					else {
 						printf("Error - Pressure compaction\n");
-						return -1;
+						//return -1;
 					}
 					if (V[3][j+1]/rho[j+1] <= v0) {
 						icompact[3][j+1] = 1;
@@ -1093,7 +1127,7 @@ int main(int argc, char **argv) {
 				}
 				else if (ieos[1][j+1] == 6) { //p-alpha model
 					printf("Error - P-Alpha model for pressure has not been implemented\n");
-					return -1;
+					//return -1;
 				}
 				else if  (ieos[1][j+1] == 7) { //Mie Gruneisen CTH like formulation
 					P0 = 0.0;
@@ -1111,7 +1145,7 @@ int main(int argc, char **argv) {
 				}
 				else {
 					printf("Error - Unexpected condition in pressure computation\n");
-					return -1;
+					//return -1;
 				}
 			}
 			
@@ -1157,11 +1191,11 @@ int main(int argc, char **argv) {
 			printf("s %2.0f %2.0f %2.0f %2.0f", s1[3][debugNode+1], s2[3][debugNode+1], s3[3][debugNode+1], epsilon1[2][debugNode+1]);
 			printf("Energy %2.0f %2.0f %2.0f %2.0f", E[3][debugNode+1], E[1][debugNode+1], xx, (2.0*(1.0+xb*(V[3][debugNode+1]-V[1][debugNode+1])/2.0)));
 		}
-		
-		
+	
 		//Spall: Check for tensile fracture (i.e. does the pressure/stress exceed pfrac) and for physical separation
 		//=================================================================================================================
 		dt_min = 1e9;
+		//DEV: Shifting the lists with node indexes used here is a loop-dependent operation and cannot be parallelized
 		for (int j=0; j<=totalNodes-2; j+=2) {
 			if ((-P[3][j+1]+s1[3][j+1] > pfrac[j]) && ibc[j+2] != 2 && ibc[j+2] != 1 && ibc[j-1] != 9) {
 				printf("Tensile Fracture has occured\n");
@@ -1174,6 +1208,9 @@ int main(int argc, char **argv) {
 				printf("\tr[3][j+3]=%2.4f;\tU[2][j+3]=%2.4f;\tP[3][j+3]=%2.4f\n", r[3][j+3], U[2][j+3], P[3][j+3]);
 				printf("\tr[3][j+4]=%2.4f;\tU[2][j+4]=%2.4f;\tP[3][j+4]=%2.4f\n", r[3][j+4], U[2][j+4], P[3][j+4]);
 				
+				//DEV: Shifting the lists with node indexes used here is a loop-dependent operation and cannot be parallelized
+				//Doing so over nz should be fine, though this has not been validated
+				#pragma omp parallel for
 				for (int nz=1; nz<=3; nz++) {
 					U[nz][j+1] = 0;
 					U[nz][j+1] = 0;
@@ -1268,6 +1305,7 @@ int main(int argc, char **argv) {
 		}
 		
 		//Spall End
+		#pragma omp parallel for private(Vdot, deltar, b, rho_local, adaptiveMeshRefinement, delt_temp)
 		for (int j=0; j<=totalNodes-2; j+=2) {
 			if (ibc[j+1] == 0) {
 				Vdot = (V[3][j+1]-V[1][j+1])/deltat;
@@ -1301,6 +1339,7 @@ int main(int argc, char **argv) {
 			}
 		}
 		
+		
 		//Adjust true timestep according to the adaptive mesh refinement value
 		if (deltat > dt_min/6) {
 			deltat = dt_min/6;
@@ -1308,7 +1347,7 @@ int main(int argc, char **argv) {
 		if (deltat < dt_min/20) {
 			deltat = dt_min/20;
 		}
-
+		
 		//Output solution to console
 		//=================================================================================================================
 		if ((int)((-1)/printIterSkip) == -1/printIterSkip || t[3] >= tstop) {
@@ -1318,6 +1357,8 @@ int main(int argc, char **argv) {
 			ketotal = 0.0;  // total kinetic energy
 			ietotal = 0.0;  // total internal energy
 			ke3total= 0.0;  // total kinetic energy
+			
+			#pragma omp parallel for reduction(+:qtotal) reduction(+:mvtotal) reduction(+:ketotal) reduction(+:etotal) reduction(+:ke3total)
 			for (int j=0; j<=totalNodes-2; j+=2) {
 				if (ibc[j+1] == 0) {
 					qtotal += q[3][j];
@@ -1332,9 +1373,11 @@ int main(int argc, char **argv) {
 			printf("%d %2.15f %2.15f %2.15f %2.15f %2.15f %2.15f\n", timestep, t[2], mvtotal, ketotal, ietotal, etotal, deltat);
 		}
 		
+		
 		//Write solution to file
 		//=================================================================================================================
 		if (t[1] == 0 || t[1] >= fileWrite) {
+			//DEV: Not sure of the exact file output format, need to update accordingly before parallelizing
 			for (int j=0; j<=totalNodes-4; j+=2) {
 				bs1 = V[1][j+1]; //rho(j+1)
 				bs2 = U[2][j];
@@ -1378,6 +1421,7 @@ int main(int argc, char **argv) {
 		
 		//Update solution
 		//=================================================================================================================
+		#pragma omp parallel for
 		for (int j=0; j<totalNodes; j++) {
 			if (ibc[j] != 9) {
 				U[0][j] = U[2][j];
