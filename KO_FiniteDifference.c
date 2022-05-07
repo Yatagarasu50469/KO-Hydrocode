@@ -3,7 +3,7 @@
 //Author:			David Helminiak
 //Version:			0.2.0
 //Date Created:		3 April 2022
-//Date Modified: 	5 May 2022
+//Date Modified: 	7 May 2022
 //
 //License:			GNU General Public License v3.0
 //Purpose:			Simulation of materials for one space dimension and time
@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 	//=================================================================================================================
 	
 	//Time to stop simulation (us)
-	int tstop=3;
+	int tstop=10;
 	
 	//Geometry type; plane: 1; cylindircal: 2 (untested); sphere: 3 (untested)
 	int geometry = 1;
@@ -86,7 +86,11 @@ int main(int argc, char **argv) {
 		//	ieos, 	Nodes, 		Length, 	xstart, 	P_0,			U_0, 		Rho_0, 		E_0, 		Rho_00, 	Co, 		s,		s2, 	gamma,		Yield (Y), 		mu (G),		pfrac, 		Cv, 		a_p, 			a_e, 	p_e, 	p_s, 	rho_0  
 		//						cm			cm			Mabar			cm/us		g/cc					g/cc 		cm/us									Mbar			Mbar		Mbar		Mbar-cc/K-g
 	
-	//No-spall condition simulation (0: ZEROS; 1: Tungsten; 2: Aluminium; 3: Aluminium; 4: PMMA)
+	
+	//CONFIG-A
+	
+	
+	//1x No-spall condition simulation (0: ZEROS; 1: Tungsten; 2: Aluminium; 3: Aluminium; 4: PMMA) (680 material nodes)
 	double matProp[5][22] = {
 		{	0,    	0,    		0, 	  		0, 			0, 				0,    		0,  		0,	 	    0, 	 	  	0,  	   	0, 	   	0,  	0, 			0, 	  			0, 	 		0, 			0,   		0,   			0, 	  	0,   	0,   	0		},
 		{	1, 		320,		8.0,		-8.01,		0.0*1e-6, 		1650*1e-4,	19.20, 		0.000, 		19.20, 		0.404, 		1.23, 	0.00, 	0.00,		1.5*1e-99, 		.35, 		1e9, 		1e-9, 		0.00, 			0.00, 	0.00, 	0.00, 	0.00	},
@@ -95,12 +99,53 @@ int main(int argc, char **argv) {
 		{	1, 		320, 		8.0, 		1.00, 		0.0*1e-6, 		0.00000, 	1.19, 		0.000, 		1.19, 		0.257, 		1.54, 	0.00, 	0.00, 		1.5*1e-99, 		.33, 		1e9, 		1e-9, 		0.00, 			0.00, 	0.00, 	0.00, 	0.00	}
 	};
 	
+	
 	/*
-	//Spall condition simulation (0: ZEROS; 1: Tungsten; 2: Aluminium)
+	//2x No-spall condition simulation (0: ZEROS; 1: Tungsten; 2: Aluminium; 3: Aluminium; 4: PMMA) (1360 material nodes)
+	double matProp[5][22] = {
+		{	0,    	0,    		0, 	  		0, 			0, 				0,    		0,  		0,	 	    0, 	 	  	0,  	   	0, 	   	0,  	0, 			0, 	  			0, 	 		0, 			0,   		0,   			0, 	  	0,   	0,   	0		},
+		{	1, 		640,		16.0,		-16.01,		0.0*1e-6, 		1650*1e-4,	19.20, 		0.000, 		19.20, 		0.404, 		1.23, 	0.00, 	0.00,		1.5*1e-99, 		.35, 		1e9, 		1e-9, 		0.00, 			0.00, 	0.00, 	0.00, 	0.00	},
+		{	1,  	40,		   	1.0,     	0.00,   	0.0*1e-6, 		1650*1e-4,  2.71,  		0.000,    	2.71,    	0.535,   	1.34,   0.00,   0.00,   	1.5*1e-99,  	.33,  		1e9,    	1e-9,   	0.00,   		0.00,   0.00,   0.00,   0.00	},
+		{	1, 		40, 		1.0, 		1.00, 		0.0*1e-6, 		0.00000, 	2.71, 		0.000, 		2.71, 		0.535, 		1.34, 	0.00, 	0.00, 		1.5*1e-99, 		.33, 		1e9, 		1e-9, 		0.00, 			0.00, 	0.00, 	0.00, 	0.00	},
+		{	1, 		640, 		16.0, 		2.00, 		0.0*1e-6, 		0.00000, 	1.19, 		0.000, 		1.19, 		0.257, 		1.54, 	0.00, 	0.00, 		1.5*1e-99, 		.33, 		1e9, 		1e-9, 		0.00, 			0.00, 	0.00, 	0.00, 	0.00	}
+	};
+	*/
+	
+	/*
+	//3x No-spall condition simulation (0: ZEROS; 1: Tungsten; 2: Aluminium; 3: Aluminium; 4: PMMA) (2040 material nodes)
+	double matProp[5][22] = {
+		{	0,    	0,    		0, 	  		0, 			0, 				0,    		0,  		0,	 	    0, 	 	  	0,  	   	0, 	   	0,  	0, 			0, 	  			0, 	 		0, 			0,   		0,   			0, 	  	0,   	0,   	0		},
+		{	1, 		960,		24.0,		-24.01,		0.0*1e-6, 		1650*1e-4,	19.20, 		0.000, 		19.20, 		0.404, 		1.23, 	0.00, 	0.00,		1.5*1e-99, 		.35, 		1e9, 		1e-9, 		0.00, 			0.00, 	0.00, 	0.00, 	0.00	},
+		{	1,  	60,		   	1.5,     	0.00,   	0.0*1e-6, 		1650*1e-4,  2.71,  		0.000,    	2.71,    	0.535,   	1.34,   0.00,   0.00,   	1.5*1e-99,  	.33,  		1e9,    	1e-9,   	0.00,   		0.00,   0.00,   0.00,   0.00	},
+		{	1, 		60, 		1.5, 		1.50, 		0.0*1e-6, 		0.00000, 	2.71, 		0.000, 		2.71, 		0.535, 		1.34, 	0.00, 	0.00, 		1.5*1e-99, 		.33, 		1e9, 		1e-9, 		0.00, 			0.00, 	0.00, 	0.00, 	0.00	},
+		{	1, 		960, 		24.0, 		3.00, 		0.0*1e-6, 		0.00000, 	1.19, 		0.000, 		1.19, 		0.257, 		1.54, 	0.00, 	0.00, 		1.5*1e-99, 		.33, 		1e9, 		1e-9, 		0.00, 			0.00, 	0.00, 	0.00, 	0.00	}
+	};
+	*/
+	
+	
+	//CONFIG-B
+	/*
+	//1x Spall condition simulation (0: ZEROS; 1: Tungsten; 2: Aluminium) (680 material nodes)
 	double matProp[3][22] = {
 		{	0,    	0,    		0, 	  		0, 			0, 				0,    		0,  		0,	 	    0, 	 	  	0,  	   	0, 	   	0,  	0, 			0, 	  			0, 	 		0, 			0,   		0,   			0, 	  	0,   	0,   	0		},
-		{	1, 		320,		8.0,		-8.01,		0.0*1e-6, 		1650*1e-4,	19.20, 		0.000, 		19.20, 		0.404, 		1.23, 	0.00, 	0.00,		1.5*1e-99, 		.35, 		1e9, 		1e-9, 		0.00, 			0.00, 	0.00, 	0.00, 	0.00	},
-		{	1,  	20,		   	0.5,     	0.00,   	0.0*1e-6, 		0.00000, 	2.71,  		0.000,    	2.71,    	0.535,   	1.34,   0.00,   0.00,   	1.5*1e-99,  	.33,  		1e9,    	1e-9,   	0.00,   		0.00,   0.00,   0.00,   0.00	},
+		{	1, 		640,		16.0,		-16.01,		0.0*1e-6, 		1650*1e-4,	19.20, 		0.000, 		19.20, 		0.404, 		1.23, 	0.00, 	0.00,		1.5*1e-99, 		.35, 		1e9, 		1e-9, 		0.00, 			0.00, 	0.00, 	0.00, 	0.00	},
+		{	1,  	40,		   	1.0,     	0.00,   	0.0*1e-6, 		0.00000, 	2.71,  		0.000,    	2.71,    	0.535,   	1.34,   0.00,   0.00,   	1.5*1e-99,  	.33,  		1e9,    	1e-9,   	0.00,   		0.00,   0.00,   0.00,   0.00	},
+	};
+	*/
+	/*
+	//2x Spall condition simulation (0: ZEROS; 1: Tungsten; 2: Aluminium) (1360 material nodes)
+	double matProp[3][22] = {
+		{	0,    	0,    		0, 	  		0, 			0, 				0,    		0,  		0,	 	    0, 	 	  	0,  	   	0, 	   	0,  	0, 			0, 	  			0, 	 		0, 			0,   		0,   			0, 	  	0,   	0,   	0		},
+		{	1, 		1280,		32.0,		-32.01,		0.0*1e-6, 		1650*1e-4,	19.20, 		0.000, 		19.20, 		0.404, 		1.23, 	0.00, 	0.00,		1.5*1e-99, 		.35, 		1e9, 		1e-9, 		0.00, 			0.00, 	0.00, 	0.00, 	0.00	},
+		{	1,  	80,		   	2.0,     	0.00,   	0.0*1e-6, 		0.00000, 	2.71,  		0.000,    	2.71,    	0.535,   	1.34,   0.00,   0.00,   	1.5*1e-99,  	.33,  		1e9,    	1e-9,   	0.00,   		0.00,   0.00,   0.00,   0.00	},
+	};
+	*/
+	/*
+	//3x Spall condition simulation (0: ZEROS; 1: Tungsten; 2: Aluminium) (2040 material nodes)
+	double matProp[3][22] = {
+		{	0,    	0,    		0, 	  		0, 			0, 				0,    		0,  		0,	 	    0, 	 	  	0,  	   	0, 	   	0,  	0, 			0, 	  			0, 	 		0, 			0,   		0,   			0, 	  	0,   	0,   	0		},
+		{	1, 		1920,		48.0,		-48.01,		0.0*1e-6, 		1650*1e-4,	19.20, 		0.000, 		19.20, 		0.404, 		1.23, 	0.00, 	0.00,		1.5*1e-99, 		.35, 		1e9, 		1e-9, 		0.00, 			0.00, 	0.00, 	0.00, 	0.00	},
+		{	1,  	120,		3.0,     	0.00,   	0.0*1e-6, 		0.00000, 	2.71,  		0.000,    	2.71,    	0.535,   	1.34,   0.00,   0.00,   	1.5*1e-99,  	.33,  		1e9,    	1e-9,   	0.00,   		0.00,   0.00,   0.00,   0.00	},
 	};
 	*/
 	
@@ -201,8 +246,8 @@ int main(int argc, char **argv) {
 	
 	//
 	double phi[4][totalNodes];
-	
 	//
+	
 	double sigmar[4][totalNodes];
 	double sigmao[4][totalNodes];
 	
@@ -279,6 +324,9 @@ int main(int argc, char **argv) {
 	//In the event of node-to-node contact, the node found corresponding to the minimum found contact time
 	int contactNode;
 	
+	//In the event that an error occurs inside of a parallelized section, trigger program termination
+	bool errorCode = false;
+	
 	//Specify initial values, confirming an even number of material nodes
 	#pragma omp parallel for
 	for (int j=0; j<totalNodes; j++) {
@@ -325,7 +373,7 @@ int main(int argc, char **argv) {
 		ieos[1][totalNodes-(imat-1)] = matProp[imat][0];
 		if ((int)matProp[imat][1]%2 != 0) {
 			printf("Error - Number of material nodes must be even, please check parameters for material: %d\n", imat);
-			//return -1;
+			errorCode = true;
 		}
 	}
 	
@@ -634,7 +682,7 @@ int main(int argc, char **argv) {
 				}
 				else {
 					printf("Error - Momentum check failed at node: %d with initial boundary condition: %d\n", j, ibc[j]);
-					//return -1;
+					errorCode = true;
 				}
 			}
 		}
@@ -715,7 +763,7 @@ int main(int argc, char **argv) {
 						}
 						else {
 							printf("Error - Momentum check failed at node: %d with initial boundary condition: %d\n", j, ibc[j]);
-							//return -1;
+							errorCode = true;
 						}
 					}
 				}
@@ -741,12 +789,12 @@ int main(int argc, char **argv) {
 			ibc[contactNode] = 0;
 			
 			//Output the condition and action to the console
-			printf("Joining Nodes %d and %d\n",contactNode-2,contactNode);
-			printf("Before Joining\n");
-			printf("\tLEFT:\t\tr[1][contactNode-4]=%2.4f;\tU[0][contactNode-4]=%2.4f\n", r[1][contactNode-4], U[0][contactNode-4]);
-			printf("\tVOID:\t\tr[1][contactNode-2]=%2.4f;\tU[1][contactNode-2]=%2.4f\n", r[1][contactNode-2], U[0][contactNode-2]); 
-			printf("\tJ:\t\tr[1][contactNode]=%2.4f;\tU[0][contactNode]=%2.4f\n", r[1][contactNode], U[0][contactNode]);
-			printf("\tRIGHT:\t\tr[1][contactNode+2]=%2.4f;\tU[0][contactNode+2]=%2.4f\n", r[1][contactNode+2], U[0][contactNode+2]);
+			//printf("Joining Nodes %d and %d\n",contactNode-2,contactNode);
+			//printf("Before Joining\n");
+			//printf("\tLEFT:\t\tr[1][contactNode-4]=%2.4f;\tU[0][contactNode-4]=%2.4f\n", r[1][contactNode-4], U[0][contactNode-4]);
+			//printf("\tVOID:\t\tr[1][contactNode-2]=%2.4f;\tU[1][contactNode-2]=%2.4f\n", r[1][contactNode-2], U[0][contactNode-2]); 
+			//printf("\tJ:\t\tr[1][contactNode]=%2.4f;\tU[0][contactNode]=%2.4f\n", r[1][contactNode], U[0][contactNode]);
+			//printf("\tRIGHT:\t\tr[1][contactNode+2]=%2.4f;\tU[0][contactNode+2]=%2.4f\n", r[1][contactNode+2], U[0][contactNode+2]);
 			
 			//Store current node information
 			uSave = (m[contactNode+1]*U[2][contactNode]+m[contactNode-3]*U[2][contactNode-2])/(m[contactNode-3]+m[contactNode+1]);
@@ -783,12 +831,12 @@ int main(int argc, char **argv) {
 			pfrac[contactNode-2] = 1e-2;
 			
 			//Output the condition and action to the console
-			printf("After Joining:\n");
-			printf("\tLEFT:\t\tr[3][contactNode-4]=%2.4f\tU[2][contactNode-4]=%2.4f\n", r[3][contactNode-4], U[2][contactNode-4]);
-			printf("\tVOID:\t\tr[3][contactNode-2]=%2.4f\tU[2][contactNode-2]=%2.4f\n", r[3][contactNode-2], U[2][contactNode-2]);
-			printf("\tJ:\t\tr[3][contactNode]=%2.4f\tU[2][contactNode]=%2.4f\n", r[3][contactNode], U[2][contactNode]);
-			printf("\tRIGHT:\t\tr[3][contactNode+2]=%2.4f\tU[2][contactNode+2]=%2.4f\n", r[3][contactNode+2], U[2][contactNode+2]);
-			printf("\n");
+			//printf("After Joining:\n");
+			//printf("\tLEFT:\t\tr[3][contactNode-4]=%2.4f\tU[2][contactNode-4]=%2.4f\n", r[3][contactNode-4], U[2][contactNode-4]);
+			//printf("\tVOID:\t\tr[3][contactNode-2]=%2.4f\tU[2][contactNode-2]=%2.4f\n", r[3][contactNode-2], U[2][contactNode-2]);
+			//printf("\tJ:\t\tr[3][contactNode]=%2.4f\tU[2][contactNode]=%2.4f\n", r[3][contactNode], U[2][contactNode]);
+			//printf("\tRIGHT:\t\tr[3][contactNode+2]=%2.4f\tU[2][contactNode+2]=%2.4f\n", r[3][contactNode+2], U[2][contactNode+2]);
+			//printf("\n");
 			
 			//If contact check fails, output the condition to the console
 			if ((ibc[contactNode] != 9) && (r[3][contactNode] < r[3][contactNode-2])) {
@@ -798,7 +846,16 @@ int main(int argc, char **argv) {
 				printf("\tJ:\t\tr[3][contactNode]=%2.4f\tU[2][contactNode]=%2.4f\n", r[3][contactNode], U[2][contactNode]);
 				printf("\tRIGHT:\t\tr[3][contactNode+2]=%2.4f\tU[2][contactNode+2]=%2.4f\n", r[3][contactNode+2], U[2][contactNode+2]);
 				printf("\n");
-				return -1;
+				errorCode = true;
+			}
+		}
+		
+		//Validate boundary conditions are satisfied after the contact check 
+		#pragma omp parallel for
+		for (int j=2; j<=totalNodes-2; j+=2) {
+			if (ibc[j] != 9 && r[3][j] < r[3][j-2]) {
+				printf("Error - Contact Check Failed for node: %d, try lowering the timestep\n",j);
+				errorCode = true;
 			}
 		}
 		
@@ -815,7 +872,7 @@ int main(int argc, char **argv) {
 				V[2][j+1] = rho[j+1]*((pow(r[2][j+2],geometry)-pow(r[2][j],geometry))/geometry)/m[j+1];
 				if ((V[3][j+1] == 0) || (V[2][j+1] == 0)) {
 					printf("Error - Zero volume: %d %2.0f %2.0f %2.0f\n", j+1, r[3][j+2], r[3][j], V[3][j+1]);
-					//return -1;
+					errorCode = true;
 				}
 				
 				//Veclocity Strains; 1st order accurate			
@@ -957,7 +1014,7 @@ int main(int argc, char **argv) {
 					else {
 						printf("Error - Compaction issue in energy computation\n");
 						printf("%d %2.0f\n",icompact[3][j+1], xx);
-						//return -1;
+						errorCode = true;
 					}
 					E[3][j+1] = (E[1][j+1]-((xa+P[1][j+1])/2.0+qbar)*(V[3][j+1]-V[1][j+1])+deltaZ)/(1.0+xb*(V[3][j+1]-V[1][j+1])/2.0);
 					E[2][j+1] = (E[3][j+1]+E[1][j+1])/2.0;
@@ -1002,8 +1059,7 @@ int main(int argc, char **argv) {
 				}
 				else {
 					printf("Error - EOS computation\n");
-					printf("%d %d\n", j, ieos[1][j+1]);
-					//return -1;
+					errorCode = true;
 				}
 				
 				//Pressure
@@ -1045,8 +1101,7 @@ int main(int argc, char **argv) {
 					vv = V[2][j+1]/rho[j+1];
 					if (v0 == 0) {
 						printf("Error - v0 can not equal zero");
-						printf("%d %2.0f\n", ieos[0][j+1], matProp[ieos[0][j+1]][20]);
-						//return -1;
+						errorCode = true;
 					}
 					if (vv <= v0) {
 						icompact[2][j+1] = 1;
@@ -1066,7 +1121,7 @@ int main(int argc, char **argv) {
 					}
 					else {
 						printf("Error - Pressure compaction\n");
-						//return -1;
+						errorCode = true;
 					}
 					if (V[3][j+1]/rho[j+1] <= v0) {
 						icompact[3][j+1] = 1;
@@ -1085,6 +1140,7 @@ int main(int argc, char **argv) {
 					}
 					else {
 						printf("Error - Pessure compaction\n");
+						errorCode = true;
 					}
 				}
 				else if (ieos[1][j+1] == 5) {
@@ -1127,7 +1183,7 @@ int main(int argc, char **argv) {
 				}
 				else if (ieos[1][j+1] == 6) { //p-alpha model
 					printf("Error - P-Alpha model for pressure has not been implemented\n");
-					//return -1;
+					errorCode = true;
 				}
 				else if  (ieos[1][j+1] == 7) { //Mie Gruneisen CTH like formulation
 					P0 = 0.0;
@@ -1145,7 +1201,7 @@ int main(int argc, char **argv) {
 				}
 				else {
 					printf("Error - Unexpected condition in pressure computation\n");
-					//return -1;
+					errorCode = true;
 				}
 			}
 			
@@ -1194,38 +1250,38 @@ int main(int argc, char **argv) {
 	
 		//Spall: Check for tensile fracture (i.e. does the pressure/stress exceed pfrac) and for physical separation
 		//=================================================================================================================
-		dt_min = 1e9;
+		
 		//DEV: Shifting the lists with node indexes used here is a loop-dependent operation and cannot be parallelized
 		for (int j=0; j<=totalNodes-2; j+=2) {
 			if ((-P[3][j+1]+s1[3][j+1] > pfrac[j]) && ibc[j+2] != 2 && ibc[j+2] != 1 && ibc[j-1] != 9) {
-				printf("Tensile Fracture has occured\n");
-				printf("Before Separating:\n");
-				printf("\tr[3][j-2]=%2.4f;\tU[2][j-2]=%2.4f;\tP[3][j-2]=%2.4f\n", r[3][j-2], U[2][j-2], P[3][j-2]);
-				printf("\tr[3][j-1]=%2.4f;\tU[2][j-1]=%2.4f;\tP[3][j-1]=%2.4f\n", r[3][j-1], U[2][j-1], P[3][j-1]);
-				printf("\tr[3][j]=%2.4f;\tU[2][j]=%2.4f;\tP[3][j]=%2.4f\n", r[3][j], U[2][j], P[3][j]);
-				printf("\tr[3][j+1]=%2.4f;\tU[2][j+1]=%2.4f;\tP[3][j+1]=%2.4f\n", r[3][j+1], U[2][j+1], P[3][j+1]);
-				printf("\tr[3][j+2]=%2.4f;\tU[2][j+2]=%2.4f;\tP[3][j+2]=%2.4f\n", r[3][j+2], U[2][j+2], P[3][j+2]);
-				printf("\tr[3][j+3]=%2.4f;\tU[2][j+3]=%2.4f;\tP[3][j+3]=%2.4f\n", r[3][j+3], U[2][j+3], P[3][j+3]);
-				printf("\tr[3][j+4]=%2.4f;\tU[2][j+4]=%2.4f;\tP[3][j+4]=%2.4f\n", r[3][j+4], U[2][j+4], P[3][j+4]);
+				//printf("Before Separating:\n");
+				//printf("\tr[3][j-2]=%2.4f;\tU[2][j-2]=%2.4f;\tP[3][j-2]=%2.4f\n", r[3][j-2], U[2][j-2], P[3][j-2]);
+				//printf("\tr[3][j-1]=%2.4f;\tU[2][j-1]=%2.4f;\tP[3][j-1]=%2.4f\n", r[3][j-1], U[2][j-1], P[3][j-1]);
+				//printf("\tr[3][j]=%2.4f;\tU[2][j]=%2.4f;\tP[3][j]=%2.4f\n", r[3][j], U[2][j], P[3][j]);
+				//printf("\tr[3][j+1]=%2.4f;\tU[2][j+1]=%2.4f;\tP[3][j+1]=%2.4f\n", r[3][j+1], U[2][j+1], P[3][j+1]);
+				//printf("\tr[3][j+2]=%2.4f;\tU[2][j+2]=%2.4f;\tP[3][j+2]=%2.4f\n", r[3][j+2], U[2][j+2], P[3][j+2]);
+				//printf("\tr[3][j+3]=%2.4f;\tU[2][j+3]=%2.4f;\tP[3][j+3]=%2.4f\n", r[3][j+3], U[2][j+3], P[3][j+3]);
+				//printf("\tr[3][j+4]=%2.4f;\tU[2][j+4]=%2.4f;\tP[3][j+4]=%2.4f\n", r[3][j+4], U[2][j+4], P[3][j+4]);
 				
-				//DEV: Shifting the lists with node indexes used here is a loop-dependent operation and cannot be parallelized
-				//Doing so over nz should be fine, though this has not been validated
+				for (int jjj=totalNodes-4; jjj>=j+2; jjj-=2) {
+					ibc[jjj] = ibc[jjj-2];
+					ibc[jjj-1] = ibc[jjj-3];
+					ieos[0][jjj] = ieos[0][jjj-2];
+					ieos[0][jjj-1] = ieos[0][jjj-3];
+					ieos[1][jjj] = ieos[1][jjj-2];
+					ieos[1][jjj-1] = ieos[1][jjj-3];
+					m[jjj] = m[jjj-2];
+					m[jjj-1] = m[jjj-3];
+					rho[jjj] = rho[jjj-2];
+					rho[jjj-1] = rho[jjj-3];
+					Y[jjj] = Y[jjj-2];
+					Y[jjj-1] = Y[jjj-3];
+					pfrac[jjj] = pfrac[jjj-2];
+					pfrac[jjj-1] = pfrac[jjj-3];
+				}
+				
 				#pragma omp parallel for
 				for (int nz=1; nz<=3; nz++) {
-					U[nz][j+1] = 0;
-					U[nz][j+1] = 0;
-					phi[nz][j+1] = 0;
-					beta[nz][j+1] = 0;
-					sigmar[nz][j+1] = 0;
-					sigmao[nz][j+1] = 0;
-					V[nz][j+1] = 0;
-					s1[nz][j+1] = 0;
-					s2[nz][j+1] = 0;
-					s3[nz][j+1] = 0;
-					E[nz][j+1] = 0;
-					Y[j+1] = 0;
-					q[nz][j+1] = 0;
-					pfrac[j+1] = 0;
 					for (int jjj=totalNodes-4; jjj>=j+2; jjj-=2) {
 						r[nz][jjj] = r[nz][jjj-2];
 						r[nz][jjj-1] = r[nz][jjj-3];
@@ -1258,24 +1314,22 @@ int main(int argc, char **argv) {
 						K[nz][jjj] = K[nz][jjj-2];
 						K[nz][jjj-1] = K[nz][jjj-3];
 					}
+					U[nz][j+1] = 0;
+					U[nz][j+1] = 0;
+					phi[nz][j+1] = 0;
+					beta[nz][j+1] = 0;
+					sigmar[nz][j+1] = 0;
+					sigmao[nz][j+1] = 0;
+					V[nz][j+1] = 0;
+					s1[nz][j+1] = 0;
+					s2[nz][j+1] = 0;
+					s3[nz][j+1] = 0;
+					E[nz][j+1] = 0;
+					Y[j+1] = 0;
+					q[nz][j+1] = 0;
+					pfrac[j+1] = 0;
 				}
-				//Loop for the non-nz indexed variables; loop-dependent
-				for (int jjj=totalNodes-4; jjj>=j+2; jjj-=2) {
-					ibc[jjj] = ibc[jjj-2];
-					ibc[jjj-1] = ibc[jjj-3];
-					ieos[0][jjj] = ieos[0][jjj-2];
-					ieos[0][jjj-1] = ieos[0][jjj-3];
-					ieos[1][jjj] = ieos[1][jjj-2];
-					ieos[1][jjj-1] = ieos[1][jjj-3];
-					m[jjj] = m[jjj-2];
-					m[jjj-1] = m[jjj-3];
-					rho[jjj] = rho[jjj-2];
-					rho[jjj-1] = rho[jjj-3];
-					Y[jjj] = Y[jjj-2];
-					Y[jjj-1] = Y[jjj-3];
-					pfrac[jjj] = pfrac[jjj-2];
-					pfrac[jjj-1] = pfrac[jjj-3];
-				}
+				
 				ibc[j] = 2;
 				ibc[j+1] = 9;
 				ibc[j+2] = -2;
@@ -1293,18 +1347,19 @@ int main(int argc, char **argv) {
 				pfrac[j] = pfrac[j-1];
 				pfrac[j+2] = pfrac[j+3];
 				
-				printf("After Separating: %d\n", j);
-				printf("\tr[3][j-2]=%2.4f;\tU[2][j-2]=%2.4f;\tP[3][j-2]=%2.4f\n", r[3][j-2], U[2][j-2], P[3][j-2]);
-				printf("\tr[3][j-1]=%2.4f;\tU[2][j-1]=%2.4f;\tP[3][j-1]=%2.4f\n", r[3][j-1], U[2][j-1], P[3][j-1]);
-				printf("\tr[3][j]=%2.4f;\tU[2][j]=%2.4f;\tP[3][j]=%2.4f\n", r[3][j], U[2][j], P[3][j]);
-				printf("\tr[3][j+1]=%2.4f;\tU[2][j+1]=%2.4f;\tP[3][j+1]=%2.4f\n", r[3][j+1], U[2][j+1], P[3][j+1]);
-				printf("\tr[3][j+2]=%2.4f;\tU[2][j+2]=%2.4f;\tP[3][j+2]=%2.4f\n", r[3][j+2], U[2][j+2], P[3][j+2]);
-				printf("\tr[3][j+3]=%2.4f;\tU[2][j+3]=%2.4f;\tP[3][j+3]=%2.4f\n", r[3][j+3], U[2][j+3], P[3][j+3]);
-				printf("\tr[3][j+4]=%2.4f;\tU[2][j+4]=%2.4f;\tP[3][j+4]=%2.4f\n", r[3][j+4], U[2][j+4], P[3][j+4]);
+				//printf("After Separating: %d\n", j);
+				//printf("\tr[3][j-2]=%2.4f;\tU[2][j-2]=%2.4f;\tP[3][j-2]=%2.4f\n", r[3][j-2], U[2][j-2], P[3][j-2]);
+				//printf("\tr[3][j-1]=%2.4f;\tU[2][j-1]=%2.4f;\tP[3][j-1]=%2.4f\n", r[3][j-1], U[2][j-1], P[3][j-1]);
+				//printf("\tr[3][j]=%2.4f;\tU[2][j]=%2.4f;\tP[3][j]=%2.4f\n", r[3][j], U[2][j], P[3][j]);
+				//printf("\tr[3][j+1]=%2.4f;\tU[2][j+1]=%2.4f;\tP[3][j+1]=%2.4f\n", r[3][j+1], U[2][j+1], P[3][j+1]);
+				//printf("\tr[3][j+2]=%2.4f;\tU[2][j+2]=%2.4f;\tP[3][j+2]=%2.4f\n", r[3][j+2], U[2][j+2], P[3][j+2]);
+				//printf("\tr[3][j+3]=%2.4f;\tU[2][j+3]=%2.4f;\tP[3][j+3]=%2.4f\n", r[3][j+3], U[2][j+3], P[3][j+3]);
+				//printf("\tr[3][j+4]=%2.4f;\tU[2][j+4]=%2.4f;\tP[3][j+4]=%2.4f\n", r[3][j+4], U[2][j+4], P[3][j+4]);
 			}
 		}
 		
 		//Spall End
+		dt_min = 1e9;
 		#pragma omp parallel for private(Vdot, deltar, b, rho_local, adaptiveMeshRefinement, delt_temp)
 		for (int j=0; j<=totalNodes-2; j+=2) {
 			if (ibc[j+1] == 0) {
@@ -1316,18 +1371,16 @@ int main(int argc, char **argv) {
 				}
 				rho_local = rho[j+1]/V[3][j+1];
 				if (rho_local > 1e10) {
-					printf("Error: density too high\n");
+					printf("Error: Density too high\n");
 					printf("%d %2.4f\n",j,t[1]);
 					printf("%2.4f %2.4f\n", rho[j+1], V[3][j+1]);
 					printf("%2.4f %2.4f\n", r[3][j+2], r[3][j]);
 					printf("%2.4f %2.4f\n", V[3][j+1], V[1][j+1]);
 					printf("%2.4f %2.4f %2.4f %2.4f\n", P[2][j], P[2][j+1], P[3][j], P[3][j+1]);
-					//return -1;
+					errorCode = true;
 				}
 				adaptiveMeshRefinement = sqrt(fabs(P[3][j+1])/rho_local);
-				
 				if ((pow(adaptiveMeshRefinement,2)+pow(b,2)) != 0) {
-					
 					delt_temp = (2.0/3.0)*(deltar/sqrt(pow(adaptiveMeshRefinement,2)+pow(b,2)));
 					#pragma omp critical
 					{
@@ -1464,6 +1517,13 @@ int main(int argc, char **argv) {
 				entropy[1][j] = entropy[3][j];
 			}
 		}
+		
+		//Check for the occurance of an error generated during execution of the parallelized sections
+		if (errorCode) {
+			printf("Error - An error occured during a parallelized section during the last loop\n");
+			return -1;
+		}
+		
 	}
 	
 	//Output the complete program computation time
