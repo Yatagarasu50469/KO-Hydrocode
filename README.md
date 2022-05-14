@@ -13,7 +13,7 @@ This hydrocode was ultimately derived from Wilkin's 'Computer Simulation of Dyna
 
 # COMPILATION
 
-    mpicc DH_KO_FiniteDifference\ -\ singleThreadBackup.c -o KO_FiniteDifference -lm
+    mpicc KO_FiniteDifference.c -o KO_FiniteDifference -lm -fopenmp
 
 # RUNTIME
 Change number of threads to parallelize operations across with:
